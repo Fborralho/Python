@@ -160,6 +160,12 @@ while True:
             player.hideturtle()
             break
             print("GAME OVER")
+            
+        if enemy.ycor() <= -250:
+            enemy.hideturtle()
+            player.hideturtle()
+            break
+            print("GAME OVER")
 
         if score == 25:
             break
