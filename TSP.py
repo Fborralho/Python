@@ -1,6 +1,6 @@
 import random
 import numpy as np
-import panda as pd 
+import pandas as pd 
 import math
 
 class City:
