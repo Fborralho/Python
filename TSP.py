@@ -1,10 +1,11 @@
 import random
 import numpy as np
-import pandas as pd 
+import pandas as pd
 import math
+import operator
 
 class City:
-    def __init__(self):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
 
@@ -15,7 +16,7 @@ class City:
 
 
 class Fitness:
-    def __init__(self):
+    def __init__(self, road):
         self.road = road
         self.distance = 0
         self.fitness = 0
@@ -54,27 +55,29 @@ def population(pSize, cityList):
     return population
 
 def fitnessEvaluation(population):
-    fitResults = []
+    fitResults = {}
     for i in range(len(population)):
-        fitResults[i] = Fitness(population[i].road_fitness())
+        fitResults[i] = Fitness(population[i]).road_fitness()
 
-    return sorted(fitResults, reverse= True)
+    return sorted(fitResults.items(), key=operator.itemgetter, reverse=True)
 
+#Select best routes based on fitness percentage
 def selection(popRank, bestSize):
     selResults = []
     df = pd.DataFrame(np.array(popRank), columns=["Index", "Fitness"])
     df["cum_sum"] = df.Fitness.cumsum()
-    df["cum_perc"] = 100* df.cum_sum/df.Fitness.sum()
+    df["cum_perc"] = 100 * df.cum_sum/df.Fitness.sum()
 
     for i in range(bestSize):
         selResults.append(popRank[i][0])
     for i in range(len(popRank) - bestSize):
         pick = 100*random.random()
         for i in range(len(popRank)):
-            if pick <= df.iat[i,3]:
+            if pick <= df.iat[i, 3]:
                 selResults.append(popRank[i][0])
                 break
     return selResults
+
 
 def breed(adult1, adult2):
     child = []
@@ -83,8 +86,6 @@ def breed(adult1, adult2):
 
     geneA = int(random.random() * len(adult1))
     geneB = int(random.random() * len(adult2))
-
-
     startGene = min(geneA, geneB)
     endGene = max(geneA, geneB)
 
@@ -97,6 +98,14 @@ def breed(adult1, adult2):
 
     return child
 
+def matingPool(pop, selResults):
+    pool = []
+    for i in range(len(selResults)):
+        index = selResults[i]
+        pool.append(pop[index])
+    return pool
+
+# Goes through the best mating pool and returns the result of the breed
 def breedPopulation(mating, bestSize):
         children = []
         length = len(mating) - bestSize
@@ -110,6 +119,7 @@ def breedPopulation(mating, bestSize):
             children.append(child)
         return children
 
+# IMPORTANT: Doesn't let the algorithm get stuck
 def mutation(indiv, mutRate):
     for swapped in range(len(indiv)):
         if random.random() < mutRate:
@@ -130,17 +140,19 @@ def mutatePopulation(pop, mutRate):
         mutatedPop.append(mutatedInd)
     return mutatedPop
 
+
 def nextGeneration(curGen, bestSize, mutRate):
     popRank = fitnessEvaluation(curGen)
     selResults = selection(popRank, bestSize)
-    pool = mating(curGen, selResults)
+    pool = matingPool(curGen, selResults)
     children = breedPopulation(pool, bestSize)
     nextGen  = mutatePopulation(children, mutRate)
     return nextGen
 
+
 def geneticAlgo(pop, popSize, bestSize, mutRate, generations):
     pop = population(popSize, pop)
-    print("Initial distance: " + str(1/fitnessEvaluation(pop)[0][1]))
+    print("Initial distance: " + str(1 / fitnessEvaluation(pop)[0][1]))
 
     for i in range(generations):
         pop = nextGeneration(pop, bestSize, mutRate)
@@ -152,8 +164,7 @@ def geneticAlgo(pop, popSize, bestSize, mutRate, generations):
     return bestRoad
 
 
-
 city = []
 for i in range(100):
-    city.append(City(x = int(random.random() * 200), y = int(random.random() * 200)))
-geneticAlgo(pop=city, popSize=100, mutRate= 0.02, bestSize=20, generations=500)
+    city.append(City(x=int(random.random() * 200), y=int(random.random() * 200)))
+geneticAlgo(pop=city, popSize=100, bestSize=20, mutRate=0.01, generations=500)
